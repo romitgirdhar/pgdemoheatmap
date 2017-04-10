@@ -14,6 +14,4 @@ class Heatmap(models.Model):
 
     def __unicode__(self):
         return self.location
-
-    def save(self, **kwargs):
         

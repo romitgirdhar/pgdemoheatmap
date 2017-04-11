@@ -1,4 +1,6 @@
-<script type='text/javascript' src='http://www.bing.com/api/maps/mapcontrol?callback=getMap' async defer></script>
+<script async defer type="text/javascript" 
+src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAcGNp1ktAaDu1giZj5b05i8_q7b9PHbA8&libraries=visualization&callback=getMap">
+</script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
 <script>
     var heatMap = null;
@@ -6,19 +8,21 @@
     var locations = [];
 
     function getMap(){
-        var loc = new Microsoft.Maps.Location(47.6117309, -122.3351027);
+        var loc = new google.maps.LatLng(47.6117309, -122.3351027);
         var mapOptions = {
             zoom: 10,
             center: loc,
-            credentials: 'AmTOjxQXZeKHxacoFI3IoPyR6PHW0U-r0NgDSQ8F-x0dt97mnLMFKREiS96mkOkX',
         };
-        map = new Microsoft.Maps.Map($('.map')[0], mapOptions);
+        map = new google.maps.Map($('.map')[0], mapOptions);
 
-        Microsoft.Maps.loadModule('Microsoft.Maps.HeatMap', function () {
-            console.log('Test')
-            timeout();
-        });
+        timeout();
+        console.log('Past test');
 
+    }
+
+    function makeheat(){
+        heatmap = new google.maps.visualization.HeatmapLayer({map: map, data: locations, maxIntensity: 5, opacity: 0.3, radius: 15});
+        heatmap.setMap(map);
     }
 
     function timeout(){
@@ -27,10 +31,10 @@
             {
                 $.post("{% url 'heatmap-home' %}",
                 function (data) {
-                    locations.push(data.lat, data.long);
-                    heatMap = new Microsoft.Maps.HeatMapLayer(locations);
-                    map.layers.insert(heatMap);
+                    var point = new google.maps.LatLng(data.lat, data.long);
+                    locations.push(point);
                 }, 'json');
+                makeheat();
                 timeout();
             }, 500);
     }

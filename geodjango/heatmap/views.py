@@ -28,7 +28,6 @@ CityList = [ {'city': 'Seattle', 'weight': '0', 'lat': '47.620422', 'long': '-12
 @csrf_exempt
 def home(request):
     if request.method == "POST":
-        print('Save called')
  
         randomCity = randint(0, len(CityList)-1)
         randomCity = CityList[randomCity]
@@ -40,7 +39,6 @@ def home(request):
        
         newHeatmap = Heatmap.objects.create(location=loc)
         newHeatmap.save()
-        print('lat: ', lat, ' and long: ', lng)
         heatmappoint = {'lat': lat, 'long': lng}
         return HttpResponse(json.dumps(heatmappoint), content_type='application/json')
     

@@ -1,42 +1,40 @@
-    <script type='text/javascript'
-            src='http://www.bing.com/api/maps/mapcontrol?callback=GetMap'
-            async defer></script>
+<script type='text/javascript' src='http://www.bing.com/api/maps/mapcontrol?callback=getMap' async defer></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
 <script>
-    function GetMap() {
+    var heatMap = null;
+    var map = null;
+    var locations = [];
+
+    function getMap(){
         var loc = new Microsoft.Maps.Location(47.6117309, -122.3351027);
         var mapOptions = {
-            zoom: 15,
+            zoom: 10,
             center: loc,
             credentials: 'AmTOjxQXZeKHxacoFI3IoPyR6PHW0U-r0NgDSQ8F-x0dt97mnLMFKREiS96mkOkX',
         };
         map = new Microsoft.Maps.Map($('.map')[0], mapOptions);
-        console.log('Hello World');
 
-        
         Microsoft.Maps.loadModule('Microsoft.Maps.HeatMap', function () {
-            // Creating sample Pushpin data within map view
-            console.log('Hello World 2');
-            var mapDiv = map.getRootElement();
-            var locations = [];
-            for (var i = 0; i < 1000; i++) {
-                locations.push(map.tryPixelToLocation(new Microsoft.Maps.Point(mapDiv.clientWidth * Math.random(), mapDiv.clientHeight * Math.random()), Microsoft.Maps.PixelReference.control));
-            }
-            console.log(locations.length);
-            var heatMap = new Microsoft.Maps.HeatMapLayer(locations);
-            map.layers.insert(heatMap);
+            console.log('Test')
+            timeout();
         });
 
+    }
+
+    function timeout(){
         setTimeout(
             function() 
             {
                 $.post("{% url 'heatmap-home' %}",
                 function (data) {
-                    
+                    locations.push(data.lat, data.long);
+                    heatMap = new Microsoft.Maps.HeatMapLayer(locations);
+                    map.layers.insert(heatMap);
                 }, 'json');
-            }, 1000);
-        }
+                timeout();
+            }, 500);
+    }
 </script>
-<body onload="GetMap()">
+<body onload="getMap()">
     <div class="map" style="width: 100%; height: 100%;"></div>
 </body>

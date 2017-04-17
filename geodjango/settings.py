@@ -29,8 +29,19 @@ ALLOWED_HOSTS = []
 
 CORS_ORIGIN_ALLOW_ALL = True
 
-# Application definition
+# Database
+# https://docs.djangoproject.com/en/1.11/ref/settings/#databases
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.contrib.gis.db.backends.postgis',
+        'NAME': 'demodb',
+        'USER': 'demo',
+        'PASSWORD': 'Password1',
+        'HOST': 'localhost',
+    }
+}
 
+# Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -73,21 +84,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'geodjango.wsgi.application'
-
-
-# Database
-# https://docs.djangoproject.com/en/1.11/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'NAME': 'heatmapdb',
-        'USER': 'mark',
-        'PASSWORD': 'build2017',
-        'HOST': 'localhost',
-    }
-}
-
 
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators

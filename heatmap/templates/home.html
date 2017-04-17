@@ -1,44 +1,140 @@
-<script async defer type="text/javascript" 
-src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAcGNp1ktAaDu1giZj5b05i8_q7b9PHbA8&libraries=visualization&callback=getMap">
-</script>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
-<script>
-    var heatMap = null;
-    var map = null;
-    var locations = [];
+<html>
+<head>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+        // global vars
+        var userGaugeMax = 3000, userGaugeShowMax = 2000, currentUserGaugeValue = 0;
+        var computeGaugeMax = 50, computeGaugeShowMax = 40;
+        //var userGaugeMax = 6000, userGaugeShowMax = 4000, currentUserGaugeValue = 0;
+        //var computeGaugeMax = 100, computeGaugeShowMax = 80;
 
-    function getMap(){
-        var loc = new google.maps.LatLng(47.6117309, -122.3351027);
-        var mapOptions = {
-            zoom: 10,
-            center: loc,
-        };
-        map = new google.maps.Map($('.map')[0], mapOptions);
+        var map, heatMap, pointArray;
+        var locations = [];
+        var numUsers = 0;
 
-        timeout();
-        console.log('Past test');
+        google.charts.load('current', {'packages':['gauge']});
+        google.charts.setOnLoadCallback(drawUserGauge);
+        google.charts.setOnLoadCallback(drawComputeGauge);
 
-    }
+        function drawUserGauge() {
+            var options = {
+                width: 400, height: 120,
+                minorTicks: 100,
+                animation: {
+                    duration: 500,
+                    easing: 'in',
+                },
+                min: 0, max: userGaugeMax
+            };
 
-    function makeheat(){
-        heatmap = new google.maps.visualization.HeatmapLayer({map: map, data: locations, maxIntensity: 5, opacity: 0.3, radius: 15});
-        heatmap.setMap(map);
-    }
+            var data = google.visualization.arrayToDataTable([
+                ['Label', 'Value'],
+                ['Users', 10]
+            ]);
 
-    function timeout(){
-        setTimeout(
-            function() 
-            {
-                $.post("{% url 'heatmap-home' %}",
-                function (data) {
-                    var point = new google.maps.LatLng(data.lat, data.long);
-                    locations.push(point);
-                }, 'json');
-                makeheat();
-                timeout();
+            // create & refresh user gauge
+            var userGauge = new google.visualization.Gauge(document.getElementById('userGauge_div'));
+            userGauge.draw(data, options);
+            setInterval(function() {
+                var currentVal = data.getValue(0, 1);
+                currentUserGaugeValue = currentVal;
+                var maxVal = userGaugeShowMax;
+                var newVal = currentVal + Math.round(100 * Math.random());
+                newVal = Math.min(newVal, maxVal);
+                if(newVal >= userGaugeShowMax)
+                {
+                    newVal = newVal - Math.round(15 * Math.random());
+                }
+                data.setValue(0, 1, newVal);
+                userGauge.draw(data, options);
             }, 1000);
-    }
-</script>
+        }
+
+        function drawComputeGauge() {
+            var options = {
+                width: 400, height: 120,
+                minorTicks: 5,
+                animation:{
+                    duration: 500,
+                    easing: 'inAndOut',
+                },
+                
+                redFrom: Math.round(0.90 * computeGaugeMax), redTo: computeGaugeMax, // 90-100% is Red
+                yellowFrom: Math.round(0.80 * computeGaugeMax), yellowTo: Math.round(0.90 * computeGaugeMax), // 80-90% is Yellow
+                min: 0, max: computeGaugeMax
+            };
+
+            var data = google.visualization.arrayToDataTable([
+                ['Label', 'Value'],
+                ['ComputeUnits', 5]
+            ]);
+
+            // create & refresh compute gauge
+            var computeGauge = new google.visualization.Gauge(document.getElementById('computeGauge_div'));
+            computeGauge.draw(data, options);
+            setInterval(function() {
+                var currentVal = data.getValue(0, 1);
+                var maxVal = computeGaugeShowMax;
+                var newVal = Math.round(currentUserGaugeValue / computeGaugeMax);
+                newVal = Math.min(newVal, maxVal);
+                data.setValue(0, 1, newVal);
+                computeGauge.draw(data, options);
+            }, 1000);
+        }
+    </script>
+
+    <script async defer type="text/javascript" 
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAcGNp1ktAaDu1giZj5b05i8_q7b9PHbA8&libraries=visualization&callback=getMap">
+    </script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+    
+    <script>
+        // See: https://www.heatmaptool.com/documentation.php
+        function getMap() {
+            mapCenter =  new google.maps.LatLng(47.6117309, -122.3351027);
+            locations = [ mapCenter ];
+
+            var mapOptions = {
+                zoom: 10,
+                center: mapCenter,
+            };
+
+            map = new google.maps.Map($('.map_div')[0], mapOptions);
+            pointArray = new google.maps.MVCArray(locations);
+            heatmap = new google.maps.visualization.HeatmapLayer(
+                {
+                    map: map,
+                    data: pointArray,
+                    maxIntensity: 5, opacity: 0.3, radius: 25
+                    //maxIntensity: 5, opacity: 0.3, radius: 15
+                    //gradient: 'fire',
+                }
+            );
+            heatmap.setMap(map);
+
+            // Generate a new point every 0.5 seconds
+            setInterval(function() {
+                $.post("{% url 'heatmap-home' %}",
+                    function (data) {
+                        var point = new google.maps.LatLng(data.lat, data.long);
+                        pointArray.push(point);
+                    }, 'json');
+            }, 1000);
+        }
+    </script>
+</head>
+
 <body onload="getMap()">
-    <div class="map" style="width: 100%; height: 100%;"></div>
+    <div class="map_div" style="width: 100%; height: 100%;"></div>
+    <div id="gauge_div" style="position:fixed; top:10px; right: 10px; width: 400px; height: 120px;">
+        <!--Table and divs that hold the pie charts-->
+        <table class="columns">
+            <tr>
+                <td><div id="userGauge_div"></div></td>
+                <td><div id="computeGauge_div"></div></td>
+            </tr>
+        </table>
+    </div>
 </body>
+
+</html>

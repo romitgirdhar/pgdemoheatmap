@@ -83,9 +83,57 @@
         }
     </script>
 
-    <script async defer type="text/javascript" 
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAcGNp1ktAaDu1giZj5b05i8_q7b9PHbA8&libraries=visualization&callback=getMap">
+    {% if use_bing %}
+    <script type='text/javascript' src='https://www.bing.com/api/maps/mapcontrol?callback=getMapBing' async defer></script>
+    {% else %}
+    <script async defer type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAcGNp1ktAaDu1giZj5b05i8_q7b9PHbA8&libraries=visualization&callback=getMap"></script>
+    {% endif %}
+
+    <script>
+        var map;
+
+        function getMapBing() {
+            map = new Microsoft.Maps.Map(document.getElementById('map'), {
+                credentials: 'AgocQTUxCIh2_mDtU6E1GxrnLYT7cEJbuaLUvK67Ck1IC24EmfEm32asBL_LNIxb',
+                center: new Microsoft.Maps.Location(47.6117309, -122.3351027),
+                zoom: 10
+            });
+
+            Microsoft.Maps.loadModule('Microsoft.Maps.HeatMap', function () {
+                // Creating sample Pushpin data within map view
+                var mapDiv = map.getRootElement();
+
+                var locations = [];
+                var heatMap = new Microsoft.Maps.HeatMapLayer(locations);
+                map.layers.insert(heatMap);
+
+                heatMap.setOptions({
+                    intensity: 0.25,
+                    opacity: 0.8,
+                    radius: 25,
+                    colorGradient: {
+                        '0': 'Green',
+                        '0.6': 'Yellow',
+                        '1': 'Red'
+                    }
+                });
+
+                // Generate a new point every 0.5 seconds
+                setInterval(function() {
+                    $.post("{% url 'heatmap-home' %}",
+                        function (data) {
+                            $.each(data, function (i, p) {
+                                var point = new Microsoft.Maps.Location(p.lat, p.long);
+                                locations.push(point);
+                            });
+
+                            heatMap.setLocations(locations);
+                        }, 'json');
+                }, 1000);
+            });
+        }
     </script>
+
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
     
     <script>
@@ -116,16 +164,18 @@
             setInterval(function() {
                 $.post("{% url 'heatmap-home' %}",
                     function (data) {
-                        var point = new google.maps.LatLng(data.lat, data.long);
-                        pointArray.push(point);
+                        $.each(data, function (i, p) {
+                            var point = new google.maps.LatLng(p.lat, p.long);
+                            pointArray.push(point);
+                        });
                     }, 'json');
             }, 1000);
         }
     </script>
 </head>
 
-<body onload="getMap()">
-    <div class="map_div" style="width: 100%; height: 100%;"></div>
+<body {% if not use_bing %} onload="getMap()" {% endif %}>
+    <div id="map" class="map_div" style="width: 100%; height: 100%;"></div>
     <div id="gauge_div" style="position:fixed; top:10px; right: 10px; width: 400px; height: 120px;">
         <!--Table and divs that hold the pie charts-->
         <table class="columns">

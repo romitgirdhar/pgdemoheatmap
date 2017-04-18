@@ -1,93 +1,118 @@
 <html>
 <head>
-    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-    <script type="text/javascript">
-        // global vars
-        var userGaugeMax = 3000, userGaugeShowMax = 2000, currentUserGaugeValue = 0;
-        var computeGaugeMax = 50, computeGaugeShowMax = 40;
-        //var userGaugeMax = 6000, userGaugeShowMax = 4000, currentUserGaugeValue = 0;
-        //var computeGaugeMax = 100, computeGaugeShowMax = 80;
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
 
+        form {  /* For the hidden login form from bing maps */
+            margin: 0;
+        }
+
+        header {
+            background: rgb(0, 98, 175);
+            height: 50px;
+            line-height: 50px;
+            text-indent: 10px;
+        }
+
+        header, header a {
+            color: white;
+            text-decoration: none;
+
+            font-family: sans-serif;
+            font-weight: 100;
+            font-size: 30px;
+        }
+
+        header button {
+            width: 55px;
+            height: 50px;
+
+            border: none;
+            float: left;
+
+            border: rgb(0, 78, 145) solid 10px;
+            background: linear-gradient(to bottom, white 0, white 4px, transparent 4px, transparent 13px, white 13px, white 17px, transparent 17px, transparent 26px, white 26px, white 30px, white), rgb(0, 78, 145);
+        }
+
+        #gauge_svg {
+            position: absolute;
+            bottom: 50px;
+            right: 50px;
+        }
+        .path--background {
+            fill: none;
+            stroke: #000;
+            stroke-width: 2px;
+        }
+        svg {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 15px;
+        }
+        svg .gauge_label {
+            text-transform: uppercase;
+            font-size: 13px;
+        }
+    </style>
+
+    {% if use_bing %}
+    <script async defer type='text/javascript' src='https://www.bing.com/api/maps/mapcontrol?callback=getMapBing'></script>
+    {% else %}
+    <script async defer type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAcGNp1ktAaDu1giZj5b05i8_q7b9PHbA8&libraries=visualization&callback=getMap"></script>
+    {% endif %}
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+
+    <script>
         var map, heatMap, pointArray;
         var locations = [];
         var numUsers = 0;
 
-        google.charts.load('current', {'packages':['gauge']});
-        google.charts.setOnLoadCallback(drawUserGauge);
-        google.charts.setOnLoadCallback(drawComputeGauge);
+        function getMapBing() {
+            map = new Microsoft.Maps.Map(document.getElementById('map'), {
+                credentials: 'AgocQTUxCIh2_mDtU6E1GxrnLYT7cEJbuaLUvK67Ck1IC24EmfEm32asBL_LNIxb',
+                center: new Microsoft.Maps.Location(37.0902, -95.7129),
+                mapTypeId: Microsoft.Maps.MapTypeId.canvasLight,
+                zoom: 5
+            });
 
-        function drawUserGauge() {
-            var options = {
-                width: 400, height: 120,
-                minorTicks: 100,
-                animation: {
-                    duration: 500,
-                    easing: 'in',
-                },
-                min: 0, max: userGaugeMax
-            };
+            Microsoft.Maps.loadModule('Microsoft.Maps.HeatMap', function () {
+                // Creating sample Pushpin data within map view
+                var mapDiv = map.getRootElement();
 
-            var data = google.visualization.arrayToDataTable([
-                ['Label', 'Value'],
-                ['Users', 10]
-            ]);
+                var locations = [];
+                var heatMap = new Microsoft.Maps.HeatMapLayer(locations);
+                map.layers.insert(heatMap);
 
-            // create & refresh user gauge
-            var userGauge = new google.visualization.Gauge(document.getElementById('userGauge_div'));
-            userGauge.draw(data, options);
-            setInterval(function() {
-                var currentVal = data.getValue(0, 1);
-                currentUserGaugeValue = currentVal;
-                var maxVal = userGaugeShowMax;
-                var newVal = currentVal + Math.round(100 * Math.random());
-                newVal = Math.min(newVal, maxVal);
-                if(newVal >= userGaugeShowMax)
-                {
-                    newVal = newVal - Math.round(15 * Math.random());
-                }
-                data.setValue(0, 1, newVal);
-                userGauge.draw(data, options);
-            }, 1000);
-        }
+                heatMap.setOptions({
+                    intensity: 0.25,
+                    opacity: 0.8,
+                    radius: 25,
+                    colorGradient: {
+                        '0': 'Green',
+                        '0.6': 'Yellow',
+                        '1': 'Red'
+                    }
+                });
 
-        function drawComputeGauge() {
-            var options = {
-                width: 400, height: 120,
-                minorTicks: 5,
-                animation:{
-                    duration: 500,
-                    easing: 'inAndOut',
-                },
-                
-                redFrom: Math.round(0.90 * computeGaugeMax), redTo: computeGaugeMax, // 90-100% is Red
-                yellowFrom: Math.round(0.80 * computeGaugeMax), yellowTo: Math.round(0.90 * computeGaugeMax), // 80-90% is Yellow
-                min: 0, max: computeGaugeMax
-            };
+                // Generate a new point every 0.5 seconds
+                setInterval(function() {
+                    $.post("{% url 'heatmap-home' %}",
+                        function (data) {
+                            $.each(data, function (i, p) {
+                                var point = new Microsoft.Maps.Location(p.lat, p.long);
+                                locations.push(point);
+                            });
 
-            var data = google.visualization.arrayToDataTable([
-                ['Label', 'Value'],
-                ['ComputeUnits', 5]
-            ]);
-
-            // create & refresh compute gauge
-            var computeGauge = new google.visualization.Gauge(document.getElementById('computeGauge_div'));
-            computeGauge.draw(data, options);
-            setInterval(function() {
-                var currentVal = data.getValue(0, 1);
-                var maxVal = computeGaugeShowMax;
-                var newVal = Math.round(currentUserGaugeValue / computeGaugeMax);
-                newVal = Math.min(newVal, maxVal);
-                data.setValue(0, 1, newVal);
-                computeGauge.draw(data, options);
-            }, 1000);
+                            heatMap.setLocations(locations);
+                        }, 'json');
+                }, 1000);
+            });
         }
     </script>
 
-    <script async defer type="text/javascript" 
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAcGNp1ktAaDu1giZj5b05i8_q7b9PHbA8&libraries=visualization&callback=getMap">
-    </script>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
-    
     <script>
         // See: https://www.heatmaptool.com/documentation.php
         function getMap() {
@@ -95,8 +120,8 @@
             locations = [ mapCenter ];
 
             var mapOptions = {
-                zoom: 10,
-                center: mapCenter,
+                zoom: 5,
+                center: new google.maps.LatLng(37.0902, -95.7129)
             };
 
             map = new google.maps.Map($('.map_div')[0], mapOptions);
@@ -116,25 +141,28 @@
             setInterval(function() {
                 $.post("{% url 'heatmap-home' %}",
                     function (data) {
-                        var point = new google.maps.LatLng(data.lat, data.long);
-                        pointArray.push(point);
+                        $.each(data, function (i, p) {
+                            var point = new google.maps.LatLng(p.lat, p.long);
+                            pointArray.push(point);
+                        });
                     }, 'json');
             }, 1000);
         }
     </script>
+
+    <script src="/static/js/d3.min.js"></script>
+    <script src="/static/js/index.js"></script>
 </head>
 
-<body onload="getMap()">
-    <div class="map_div" style="width: 100%; height: 100%;"></div>
-    <div id="gauge_div" style="position:fixed; top:10px; right: 10px; width: 400px; height: 120px;">
-        <!--Table and divs that hold the pie charts-->
-        <table class="columns">
-            <tr>
-                <td><div id="userGauge_div"></div></td>
-                <td><div id="computeGauge_div"></div></td>
-            </tr>
-        </table>
-    </div>
+<body {% if not use_bing %} onload="getMap()" {% endif %}>
+    <header>
+        <button></button>
+
+        <a href="#">//build streaming audience</a> &gt; <a href="#">United States</a>
+    </header>
+    <div id="map" class="map_div" style="width: 100%; height: calc(100% - 50px);"></div>
+    <svg id="gauge_svg" width="300" height="130">
+    </svg>
 </body>
 
 </html>

@@ -1,5 +1,42 @@
 <html>
 <head>
+    <style>
+        body {
+            margin: 0;
+        }
+
+        form {  /* For the hidden login form from bing maps */
+            margin: 0;
+        }
+
+        header {
+            background: rgb(0, 98, 175);
+            height: 50px;
+            line-height: 50px;
+            text-indent: 10px;
+        }
+
+        header, header a {
+            color: white;
+            text-decoration: none;
+
+            font-family: sans-serif;
+            font-weight: 100;
+            font-size: 30px;
+        }
+
+        header button {
+            width: 55px;
+            height: 50px;
+
+            border: none;
+            float: left;
+
+            border: rgb(0, 78, 145) solid 10px;
+            background: linear-gradient(to bottom, white 0, white 4px, transparent 4px, transparent 13px, white 13px, white 17px, transparent 17px, transparent 26px, white 26px, white 30px, white), rgb(0, 78, 145);
+        }
+    </style>
+
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <script type="text/javascript">
         // global vars
@@ -95,8 +132,9 @@
         function getMapBing() {
             map = new Microsoft.Maps.Map(document.getElementById('map'), {
                 credentials: 'AgocQTUxCIh2_mDtU6E1GxrnLYT7cEJbuaLUvK67Ck1IC24EmfEm32asBL_LNIxb',
-                center: new Microsoft.Maps.Location(47.6117309, -122.3351027),
-                zoom: 10
+                center: new Microsoft.Maps.Location(37.0902, -95.7129),
+                mapTypeId: Microsoft.Maps.MapTypeId.canvasLight,
+                zoom: 5
             });
 
             Microsoft.Maps.loadModule('Microsoft.Maps.HeatMap', function () {
@@ -143,8 +181,8 @@
             locations = [ mapCenter ];
 
             var mapOptions = {
-                zoom: 10,
-                center: mapCenter,
+                zoom: 5,
+                center: new google.maps.LatLng(37.0902, -95.7129)
             };
 
             map = new google.maps.Map($('.map_div')[0], mapOptions);
@@ -175,7 +213,12 @@
 </head>
 
 <body {% if not use_bing %} onload="getMap()" {% endif %}>
-    <div id="map" class="map_div" style="width: 100%; height: 100%;"></div>
+    <header>
+        <button></button>
+
+        <a href="#">//build streaming audience</a> &gt; <a href="#">United States</a>
+    </header>
+    <div id="map" class="map_div" style="width: 100%; height: calc(100% - 50px);"></div>
     <div id="gauge_div" style="position:fixed; top:10px; right: 10px; width: 400px; height: 120px;">
         <!--Table and divs that hold the pie charts-->
         <table class="columns">
